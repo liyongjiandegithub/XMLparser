@@ -1,0 +1,170 @@
+<html>
+<head>
+<script type="text/javascript">
+    function viewXML(what) {
+        var URL = what.URL.value;
+        
+        if(URL == "") {
+            alert("no URL entered");
+            return false;
+        }
+        
+        xmlDoc = loadXML(URL);
+        
+        if(!xmlDoc) {
+            alert("file not exist");
+            return false;
+        }
+        
+        //Firefox specific
+        if(xmlDoc.getElementsByTagName("parsererror").length > 0) { // xmlDoc == null
+            alert("Error in XML File");
+            return false;
+        }
+        
+        if(xmlDoc.getElementsByTagName("Row").length < 1) {
+            alert("No Listings in XML File");
+            return false;
+        }
+        
+        if(window.ActiveXObject) {                             //if IE, simply execute script (due to async prop). 
+            if(xmlDoc.parseError.errorCode != 0) {
+                var myErr = xmlDoc.parseError;
+	            generateError(xmlDoc);
+	            hWin = window.open("", "Error", "scrollbars=yes,height=300,width=340"); 
+	            hWin.document.write(html_text);
+		    } else { 
+                generateHTML(xmlDoc);
+                hWin = window.open("", "Assignment4", "scrollbars=yes,height=800,width=800");
+                hWin.document.write(html_text); 
+		    }
+	    } else{                                               //else if FF, execute script once XML object has loaded  
+	        xmlDoc.onload=generateHTML(xmlDoc);
+	        hWin = window.open("", "Assignment4", "scrollbars=yes,height=800,width=800"); 
+	        hWin.document.write(html_text); 
+	    }
+        
+	    hWin.document.close(); 
+    }
+    
+    function loadXML(url) {
+        if(window.XMLHttpRequest) {// code for IE7+, Firefox, Chrome, Opera, Safari 
+            xmlhttp=new XMLHttpRequest(); 
+        } else {// code for IE6, IE5
+            xmlhttp=new ActiveXObject("Microsoft.XMLHTTP"); 
+        }
+        
+        xmlhttp.open("GET",url,false); 
+        xmlhttp.send(); 
+        xmlDoc=xmlhttp.responseXML;
+        
+//        if(!xmlDoc) {
+//            alert("file not exist");
+//            return false;
+//        }
+        
+	    return xmlDoc; 
+	}
+
+    function generateHTML(xmlDoc) { 
+        ELEMENT_NODE = 1;
+        root=xmlDoc.DocumentElement;
+        html_text="<html><head><title>XML Parse Result</title></head><body>"; 
+        html_text+="<table border='2'>";
+        //caption=xmlDoc.getElementsByTagName("title").item(0).firstChild.nodeValue; 
+        //html_text+="<caption align='left'><h1>"+caption+"</h1></caption>"; 
+        headers=xmlDoc.getElementsByTagName("Header"); 
+        
+        headerNodeList=headers.item(0).childNodes;
+        html_text+="<tbody>"; 
+        html_text+="<tr>"; 
+        x=120; y=55;
+        for(i=0;i<headerNodeList.length;i++){ 
+            if(headerNodeList.item(i).nodeType==ELEMENT_NODE) { 
+	            header=headerNodeList.item(i).firstChild.nodeValue; 
+                
+//	            if(header=="Airbus") { 
+//		            header="Family"; 
+//		            x=120; y=55; 
+//	            } 
+//	            if(header=="Boeing") { 
+//		            header="Family"; 
+//		            x=100; y=67; 
+//	            } 
+//	            if(header=="seats")
+//                    header="Seats";
+//	            if(header=="Wingspan") 
+//		            header="Wing Span"; 
+//	            if(header=="height") 
+//		            header="Height";
+	            html_text+="<th>"+header+"</th>"; 
+	        } 
+        } 
+        html_text+="</tr>";
+
+        rows=xmlDoc.getElementsByTagName("Row");
+        
+        for(i=0;i<rows.length;i++) { 
+	        rowNodeList=rows.item(i).childNodes; 
+	        html_text+="<tr>"; 
+	        for(j=0;j<rowNodeList.length;j++) { 
+	            if(rowNodeList.item(j).nodeType==ELEMENT_NODE) { 
+                    if(rowNodeList.item(j).nodeName=="Location") {
+                        html_text+="<td><ul>";
+                        locationNodeList=rowNodeList.item(j).childNodes;
+                        
+                        if(rowNodeList.item(j).length == 0)
+                            html_text+="<li><li>";
+                        else {
+                            for(k=0;k<locationNodeList.length;k++) {
+                                if(locationNodeList.item(k).nodeType==ELEMENT_NODE) {
+                                    if(locationNodeList.item(k).firstChild)
+                                        html_text+="<li>"+locationNodeList.item(k).firstChild.nodeValue+"</li>";
+                                }
+                            }
+                        }
+                        
+                        html_text+="</ul></td>";
+                    }
+                    else if(rowNodeList.item(j).nodeName=="HomePage") {
+                        if(!rowNodeList.item(j).firstChild)
+                            html_text+="<td></td>";
+                        else
+                            html_text+="<td><a href='"+rowNodeList.item(j).firstChild.nodeValue+"'/a>"+rowNodeList.item(j).firstChild.nodeValue+"</td>";
+                    }
+		            else if(rowNodeList.item(j).nodeName=="Logo") {
+                        if(!rowNodeList.item(j).firstChild)
+                            html_text+="<td></td>";
+                        else
+		                    html_text+="<td><img src='"+rowNodeList.item(j).firstChild.nodeValue+"' width='"+x+"' height='"+y+"'></td>"; 
+		            }
+		            else {
+                        if(!rowNodeList.item(j).firstChild)
+                            html_text+="<td></td>";
+                        else
+		                    html_text+="<td>"+rowNodeList.item(j).firstChild.nodeValue+"</td>";
+		            }
+	            }
+	        } 
+	        html_text+="</tr>"; 
+        }
+        html_text+="</tbody>"; 
+        html_text+="</table>"; 
+        html_text+="</body></html>"; 
+    }
+</script>
+</head>
+
+<body>
+    <center>
+        <h1>Enter URL for Newspaper List XML File </h1>
+        <br>
+        <form name="myform" method="POST" id="location">
+            <input type="text" name="URL" maxlength="255" size="100" value="newslist.xml" />
+            <br><br>
+            <input type="button" name="submit" value="Submit Query" onClick="viewXML(this.form)" />
+        </form>
+    </center>
+    <noscript>
+</body>
+</html>
